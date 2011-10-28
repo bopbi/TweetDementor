@@ -12,7 +12,7 @@ import com.mysql.jdbc.Statement;
 
 public class UserTweetDB {
 
-	public static void insert(Connection connection, Tweet tweet)
+	public static void insert(Connection connection, Tweet tweet, int point_id)
 			throws SQLException {
 
 		// check user if exist or not
@@ -21,7 +21,7 @@ public class UserTweetDB {
 			
 			// insert
 			PreparedStatement preparedStatement = (PreparedStatement) connection
-					.prepareStatement("insert into user (user_id, user_name, text, created_at) values ( ?, ?, ?, ?) ");
+					.prepareStatement("insert into user (user_id, user_name, text, created_at, point_id) values ( ?, ?, ?, ?, ?) ");
 			
 
 			// Parameters start with 1
@@ -33,6 +33,8 @@ public class UserTweetDB {
 
 			preparedStatement.setTimestamp(4, new Timestamp(tweet.getCreatedAt().getTime()));
 			
+			preparedStatement.setInt(5, point_id);
+			
 			preparedStatement.executeUpdate();
 			
 		} else {
@@ -40,13 +42,14 @@ public class UserTweetDB {
 			
 			// update if exist
 			PreparedStatement preparedStatement = (PreparedStatement) connection
-					.prepareStatement("update user set user_name = ?, text = ?, updated_at = ? where user_id = ?");
+					.prepareStatement("update user set user_name = ?, text = ?, updated_at = ?, point_id = ? where user_id = ?");
 			// Parameters start with 1
 
 			preparedStatement.setString(1, tweet.getFromUser());
 			preparedStatement.setString(2, tweet.getText());
 			preparedStatement.setTimestamp(3, new Timestamp(tweet.getCreatedAt().getTime()));
-			preparedStatement.setLong(4, tweet.getFromUserId());
+			preparedStatement.setInt(4, point_id);
+			preparedStatement.setLong(5, tweet.getFromUserId());
 			preparedStatement.executeUpdate();
 			
 		}

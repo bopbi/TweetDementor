@@ -1,90 +1,68 @@
 package com.bopbi.main;
 
-import java.awt.FlowLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.Properties;
 
 import com.bopbi.dementor.TweetDementor;
 
 public class TwitterMain {
 
+	private static final String PROP_FILE = "myConfig.properties";
+
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		JFrame f = new JFrame("Tweet Dementor");
-		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		f.add(new DementorButton());
-		f.pack();
-		f.setResizable(false);
-		f.setLocationRelativeTo(null);
-		f.setVisible(true);
+		try {
+
+			File propFile = new File(new File("."), PROP_FILE);
+			FileInputStream is = new FileInputStream(propFile);
+			Properties prop = new Properties();
+			prop.load(is);
+			String proxy = prop.getProperty("proxy");
+			String proxy_server = prop.getProperty("proxy_server");
+			String proxy_port = prop.getProperty("proxy_port");
+			String proxy_username = prop.getProperty("proxy_username");
+			String proxy_password = prop.getProperty("proxy_password");
+			is.close();
+
+			DementorThread dementorThread = new DementorThread(proxy,
+					proxy_server, proxy_port, proxy_username, proxy_password);
+			new Thread(dementorThread).start();
+			/* code to use values read from the file */
+		} catch (Exception e) {
+			System.out.println("Failed to read from " + PROP_FILE + " file.");
+		}
 	}
+
 }
 
-class DementorButton extends JPanel implements ActionListener {
+class DementorThread implements Runnable {
 
-	private JButton jButton;
-	private Boolean dementor_running = false;
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -2307897381993059048L;
+	String proxy;
+	String proxy_server;
+	String proxy_port;
+	String proxy_username;
+	String proxy_password;
 
-	public DementorButton() {
+	public DementorThread(String proxy, String proxy_server, String proxy_port,
+			String proxy_username, String proxy_password) {
+		this.proxy = proxy;
+		this.proxy_password = proxy_password;
+		this.proxy_port = proxy_port;
+		this.proxy_server = proxy_server;
+		this.proxy_username = proxy_username;
+	}
+
+	public void run() {
+		TweetDementor tweetDementor = new TweetDementor(proxy, proxy_server,
+				proxy_port, proxy_username, proxy_password);
 		try {
-			SwingUtilities.invokeAndWait(new Runnable() {
-				public void run() {
-					makeGUI();
-				}
-			});
-		} catch (Exception exc) {
-			System.out.println("Can't create because of " + exc);
-		}
-	}
+			tweetDementor.run();
 
-	private void makeGUI() {
-		setLayout(new FlowLayout());
-
-		jButton = new JButton("Start Dementor");
-		jButton.addActionListener(this);
-		add(jButton);
-
-	}
-
-	@Override
-	public void actionPerformed(ActionEvent arg0) {
-
-		DementorThread dementorThread = new DementorThread();
-		if (jButton.getText().equals("Start Dementor")) {
-			dementor_running = true;
-			new Thread(dementorThread).start();
-			jButton.setText("Stop Dementor");
-		} else {
-			jButton.setText("Start Dementor");
-			dementor_running = false;
-
+		} catch (Exception e) {
 		}
 
 	}
-
-	class DementorThread implements Runnable {
-		public void run() {
-			TweetDementor tweetDementor = new TweetDementor();
-			try {
-
-				while (dementor_running) {
-					tweetDementor.test();
-				}
-			} catch (Exception e) {
-			}
-
-		}
-	}
-
 }

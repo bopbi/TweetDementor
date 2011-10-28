@@ -21,8 +21,22 @@ import com.mysql.jdbc.Connection;
 public class TweetDementor {
 
 	private Connection connection;
+	private String proxy;
+	private String proxy_server;
+	private String proxy_port;
+	private String proxy_username;
+	private String proxy_password;
 
-	public void test() throws InterruptedException {
+	public TweetDementor(String proxy, String proxy_server, String proxy_port,
+			String proxy_username, String proxy_password) {
+		this.proxy = proxy;
+		this.proxy_password = proxy_password;
+		this.proxy_port = proxy_port;
+		this.proxy_server = proxy_server;
+		this.proxy_username = proxy_username;
+	}
+
+	public void run() throws InterruptedException {
 		try {
 
 			try {
@@ -36,9 +50,10 @@ public class TweetDementor {
 					double lng = resultSet.getDouble("lng");
 					int radius = resultSet.getInt("radius");
 					String unit = resultSet.getString("unit");
+					int point_id = resultSet.getInt("id");
 
-					searchTweet(lat, lng, radius, unit);
-					
+					searchTweet(lat, lng, radius, unit, point_id);
+
 					Thread.sleep(25000);
 				}
 
@@ -64,14 +79,17 @@ public class TweetDementor {
 		}
 	}
 
-	void searchTweet(double lat, double lng, int radius, String unit)
+	void searchTweet(double lat, double lng, int radius, String unit, int point_id)
 			throws TwitterException {
-
+		Twitter twitter;
 		// if proxy is ITB
-		Twitter twitter = setITBProxy();
+		if (proxy.equals("1")) {
+			twitter = setITBProxy();
+		} else {
+			twitter = new TwitterFactory().getInstance();
+		}
+		
 
-		// if not using Proxy
-		// Twitter twitter = new TwitterFactory().getInstance();
 		GeoLocation geoLocation = new GeoLocation(lat, lng);
 
 		Query query = new Query();
@@ -82,12 +100,11 @@ public class TweetDementor {
 		List<Tweet> tweets = result.getTweets();
 		for (Tweet tweet : tweets) {
 			System.out.println(tweet.getFromUserId() + " -- @"
-					+ tweet.getFromUser() + " - "
-					+ tweet.getCreatedAt() + " "
+					+ tweet.getFromUser() + " - " + tweet.getCreatedAt() + " "
 					+ tweet.getText());
 
 			try {
-				UserTweetDB.insert(connection, tweet);
+				UserTweetDB.insert(connection, tweet, point_id);
 			} catch (SQLException e) {
 
 				e.printStackTrace();
@@ -102,9 +119,9 @@ public class TweetDementor {
 	 */
 	Twitter setITBProxy() {
 		ConfigurationBuilder cb = new ConfigurationBuilder();
-		cb.setHttpProxyHost("cache.itb.ac.id").setHttpProxyPort(8080)
-				.setHttpProxyUser("prabowo.bobby")
-				.setHttpProxyPassword("memasukilagi");
+		cb.setHttpProxyHost(proxy_server).setHttpProxyPort(Integer.parseInt(proxy_port))
+				.setHttpProxyUser(proxy_username)
+				.setHttpProxyPassword(proxy_password);
 		TwitterFactory tf = new TwitterFactory(cb.build());
 		return tf.getInstance();
 	}
